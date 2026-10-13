@@ -1,0 +1,915 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{color-scheme:light}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>전구 불 켜기 탐구</title>
+<style>
+:root{
+  /* 레이아웃: 위 진행 표시줄 · 한 화면에 한 단계 · 아래 이전/다음 버튼 */
+  --font:"Pretendard","Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --bg:#EDF3F8; --surface:#FFFFFF; --surface2:#E2ECF4; --ink:#14212E; --ink2:#3D4F63; --muted:#566A80; --line:#C6D6E3;
+  --brand:#1D5FA8; --brand-ink:#FFFFFF; --amber:#F2A900; --glass:#DCEBF6; --glass-on:#FFF1A8;
+  --good:#16774A; --good-bg:#DCF2E5; --bad:#B03520; --bad-bg:#FBE3DD; --warn:#8A5A00; --warn-bg:#FFF0C7;
+  --wireA:#D43F2E; --wireB:#2B3340; --batt:#EA8A2A; --metal:#B9C4CF; --metal2:#8D9AA8; --room:#1B2535;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E1620; --surface:#17222F; --surface2:#1F2E3F; --ink:#E8EFF6; --ink2:#B5C4D4; --muted:#9DB0C4; --line:#2E4157;
+    --brand:#7DB8F5; --brand-ink:#0E1620; --amber:#F7B731; --glass:#2A3B4F; --glass-on:#FFE88A;
+    --good:#78D9A3; --good-bg:#16382A; --bad:#FF9E8C; --bad-bg:#42201B; --warn:#F7CF73; --warn-bg:#3B3010;
+    --wireA:#FF6B58; --wireB:#B8C4D3; --metal:#7E8C9B; --metal2:#5E6B79; --room:#0A101A; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E1620; --surface:#17222F; --surface2:#1F2E3F; --ink:#E8EFF6; --ink2:#B5C4D4; --muted:#9DB0C4; --line:#2E4157;
+  --brand:#7DB8F5; --brand-ink:#0E1620; --amber:#F7B731; --glass:#2A3B4F; --glass-on:#FFE88A;
+  --good:#78D9A3; --good-bg:#16382A; --bad:#FF9E8C; --bad-bg:#42201B; --warn:#F7CF73; --warn-bg:#3B3010;
+  --wireA:#FF6B58; --wireB:#B8C4D3; --metal:#7E8C9B; --metal2:#5E6B79; --room:#0A101A; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{background:var(--bg);color:var(--ink);font:17px/1.7 var(--font);word-break:keep-all;overflow-wrap:break-word}
+button,select,textarea,input{font:inherit;color:inherit}
+.wrap{max-width:920px;margin-inline:auto;padding-inline:16px}
+
+/* 위쪽 */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);border-bottom:1px solid var(--line)}
+.top .row{display:flex;align-items:center;gap:10px;padding-block:10px}
+.logo{flex:none;width:34px;height:34px}
+.ttl{flex:1;min-width:0}
+.ttl b{display:block;font-size:1rem;line-height:1.25}
+.ttl span{display:block;font-size:.82rem;color:var(--muted);line-height:1.3}
+.prog{display:flex;gap:4px;padding-bottom:6px}
+.prog button{flex:1;min-width:0;background:none;border:0;padding:7px 0;cursor:pointer}
+.prog i{display:block;height:8px;border-radius:4px;background:var(--line)}
+.prog .done i{background:var(--brand)}
+.prog .cur i{background:var(--amber);box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--amber)}
+.btn{min-height:46px;padding:8px 18px;border-radius:12px;border:2px solid var(--line);background:var(--surface);cursor:pointer;font-weight:700}
+.btn:hover{border-color:var(--brand)}
+.btn.pri{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
+.btn.sm{min-height:38px;padding:4px 12px;font-size:.9rem;border-radius:10px}
+.btn.danger{border-color:var(--bad);color:var(--bad)}
+.btn.dangerfill{background:var(--bad);border-color:var(--bad);color:var(--surface)}
+.btn[disabled]{opacity:.45;cursor:default}
+:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+#delbar{background:var(--bad-bg);border-top:1px solid var(--bad);padding-block:12px}
+#delbar p{margin:0 0 10px;font-weight:700;color:var(--bad)}
+#delbar .acts{display:flex;gap:8px;flex-wrap:wrap}
+
+/* 본문 */
+main{padding-block:20px 130px;display:flex;flex-direction:column;gap:16px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:20px;min-width:0}
+.card.soft{background:var(--surface2);border-color:transparent}
+h1{font-size:clamp(1.6rem,5.2vw,2.2rem);line-height:1.3;margin:4px 0 12px;text-wrap:balance;font-weight:800}
+h2{font-size:1.3rem;line-height:1.35;margin:0 0 10px;text-wrap:balance;font-weight:800}
+h3{font-size:1.08rem;margin:0 0 8px;font-weight:800}
+p{margin:0 0 10px}
+.eyebrow{font-size:.85rem;font-weight:800;letter-spacing:.04em;color:var(--brand);margin:0}
+.phase{display:inline-block;font-size:.8rem;font-weight:800;letter-spacing:.06em;background:var(--amber);color:#2A1D00;border-radius:99px;padding:2px 12px;margin-bottom:8px}
+.muted{color:var(--muted)}
+.cap{font-size:.92rem;color:var(--muted);text-align:center;margin:8px 0 0}
+.q{font-weight:800}
+.room{background:var(--room);border-radius:16px;padding:10px;margin-top:12px;--glass:#2F3F57;--metal:#7E8C9B;--metal2:#566475;--wireB:#A9B6C7;--ink:#E6EEF7;--ink2:#9FB0C4;--muted:#9FB0C4}
+.room svg{max-width:320px;margin-inline:auto;display:block}
+ul.plain{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+ul.goal li{display:flex;gap:10px;align-items:flex-start}
+.tag{flex:none;font-size:.75rem;font-weight:800;border-radius:6px;padding:1px 8px;margin-top:4px;background:var(--surface2);color:var(--brand)}
+.flowchips{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px}
+.flowchips span{background:var(--surface2);border-radius:99px;padding:3px 14px;font-weight:700;font-size:.95rem}
+textarea{width:100%;min-height:92px;padding:12px;border-radius:12px;border:2px solid var(--line);background:var(--bg);resize:vertical;line-height:1.6}
+textarea:focus{border-color:var(--brand)}
+select{min-height:44px;padding:6px 10px;border-radius:10px;border:2px solid var(--line);background:var(--bg);max-width:100%}
+.check{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;border:2px solid var(--line);background:var(--bg);cursor:pointer}
+.check input{flex:none;width:22px;height:22px;margin-top:3px;accent-color:var(--brand)}
+.check.sel{border-color:var(--brand)}
+.check.ok{border-color:var(--good);background:var(--good-bg)}
+.check.no{border-color:var(--bad);background:var(--bad-bg)}
+.check.miss{border-color:var(--amber);background:var(--warn-bg)}
+.why{display:block;font-size:.9rem;margin-top:2px;color:var(--ink2)}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg button{flex:1 1 auto;min-width:84px;min-height:46px;padding:6px 10px;border-radius:12px;border:2px solid var(--line);background:var(--bg);cursor:pointer;font-weight:700}
+.seg button[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
+.ctl{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.ctl .lab{font-weight:800}
+.ctl .lab small{font-weight:600;color:var(--muted)}
+.wdot{display:inline-block;width:12px;height:12px;border-radius:50%;vertical-align:-1px;margin-right:4px}
+.split{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:720px){.split{grid-template-columns:minmax(0,1fr)}}
+.stage{background:var(--bg);border:1px solid var(--line);border-radius:16px;padding:8px}
+.stage svg{display:block;max-width:340px;margin-inline:auto}
+svg{width:100%;height:auto;display:block}
+.badge{display:inline-flex;align-items:center;gap:8px;border-radius:99px;padding:5px 16px;font-weight:800}
+.badge::before{content:"";width:12px;height:12px;border-radius:50%;background:currentColor}
+.badge.on{background:var(--warn-bg);color:var(--warn);border:2px solid var(--amber)}
+.badge.off{background:var(--surface2);color:var(--muted);border:2px solid var(--line)}
+.status{margin-top:10px;text-align:center}
+.status p{margin:6px 0 0;font-size:.95rem;color:var(--ink2)}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
+table{border-collapse:collapse;width:100%;font-size:.93rem;min-width:420px}
+th,td{padding:8px 10px;text-align:center;border-bottom:1px solid var(--line)}
+th{background:var(--surface2);font-size:.85rem}
+tr:last-child td{border-bottom:0}
+td.res.on{color:var(--warn);font-weight:800}
+.grid8{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.mini{border:2px solid var(--line);border-radius:14px;padding:8px;background:var(--bg);display:flex;flex-direction:column;gap:6px;min-width:0}
+.mini.on{border-color:var(--amber)}
+.mini h4{margin:0;font-size:1rem;display:flex;justify-content:space-between;align-items:center;gap:6px}
+.mini .two{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.mini .two button{min-height:40px;border-radius:10px;border:2px solid var(--line);background:var(--surface);cursor:pointer;font-weight:700;font-size:.85rem;padding:2px 4px;line-height:1.25}
+.mini .two button[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
+.mini .res{font-size:.85rem;line-height:1.4;text-align:center}
+.board{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:520px){.board{grid-template-columns:1fr}}
+.box{border-radius:14px;padding:12px;min-height:84px;border:2px dashed var(--line)}
+.box.on{border-color:var(--amber);background:var(--warn-bg)}
+.box h3{font-size:.98rem}
+.nums{display:flex;flex-wrap:wrap;gap:6px}
+.nums b{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:0 10px;font-size:1.1rem}
+.fb{font-weight:800;font-size:.92rem}
+.fb.ok{color:var(--good)} .fb.no{color:var(--bad)}
+.note{background:var(--warn-bg);border-radius:12px;padding:12px 14px;font-size:.95rem;color:var(--ink)}
+.note b{color:var(--warn)}
+.say{background:var(--good-bg);border-radius:12px;padding:12px 14px}
+.oxrow{display:flex;gap:8px}
+.oxrow button{flex:1;min-height:44px;border-radius:10px;border:2px solid var(--line);background:var(--bg);font-weight:800;font-size:1.1rem;cursor:pointer}
+.oxrow button[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
+.qgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+.item{display:flex;flex-direction:column;gap:6px;min-width:0}
+.rowsel{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;padding:6px 0}
+.rowsel .n{width:30px;height:30px;border-radius:50%;background:var(--brand);color:var(--brand-ink);font-weight:800;display:grid;place-items:center}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.pgrid .stage{padding:6px}
+.pgrid svg{max-width:260px}
+.ev{display:flex;flex-direction:column;gap:6px;padding:10px 0;border-bottom:1px solid var(--line)}
+.ev:last-child{border-bottom:0}
+.sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.sum div{background:var(--surface2);border-radius:12px;padding:10px 12px}
+.sum b{display:block;font-size:1.5rem;line-height:1.2;font-variant-numeric:tabular-nums}
+.sum span{font-size:.88rem;color:var(--muted)}
+.quote{border-left:5px solid var(--amber);padding:6px 14px;margin:8px 0;background:var(--bg);border-radius:0 10px 10px 0}
+.pdfmsg{font-weight:700;font-size:.92rem;margin:10px 0 0;color:var(--ink)}
+#delbar .pdfmsg{margin:8px 0 0;font-size:.9rem}
+
+/* 아래 이전/다음 */
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);padding-top:10px;padding-bottom:calc(10px + env(safe-area-inset-bottom,0px))}
+.nav .wrap{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center}
+.nav .btn{min-height:52px;font-size:1.05rem}
+.nav .mid{font-size:.85rem;color:var(--muted);text-align:center;line-height:1.3;min-width:70px}
+.nav .btn:last-child{justify-self:stretch}
+
+/* SVG 부품 색 */
+.f-batt{fill:var(--batt)} .f-metal{fill:var(--metal)} .f-metal2{fill:var(--metal2)}
+.st{stroke:var(--ink2);stroke-width:2.5}
+.thread{stroke:var(--metal2);stroke-width:2.5;fill:none}
+.bulb-glass{fill:var(--glass);stroke:var(--ink2);stroke-width:3}
+.bulb-glass.on{fill:var(--glass-on);stroke:var(--amber)}
+.fil{fill:none;stroke:var(--ink2);stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round}
+.fil.on{stroke:#FF8A00;stroke-width:3.5}
+.hid{fill:none;stroke:var(--ink2);stroke-width:2;stroke-dasharray:4 4;opacity:.7}
+.sym{font:800 26px var(--font);fill:#fff;text-anchor:middle}
+.lbl{font:700 15px var(--font);fill:var(--muted)}
+.wire{fill:none;stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
+.flow{fill:none;stroke:#FFD84D;stroke-width:6;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1 13;animation:fl 1s linear infinite}
+.flow.rev{animation-name:flr}
+@keyframes fl{to{stroke-dashoffset:-14}}
+@keyframes flr{to{stroke-dashoffset:14}}
+@media (prefers-reduced-motion:reduce){.flow{animation:none;stroke-dasharray:1 6}}
+.hs circle{fill:var(--brand)} .hs text{fill:var(--brand-ink);font:800 15px var(--font);text-anchor:middle}
+.hs line{stroke:var(--brand);stroke-width:2.5}
+.lever{stroke:var(--ink2);stroke-width:6;stroke-linecap:round}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <div class="row">
+      <svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="16" r="11" style="fill:var(--amber)"/><rect x="14" y="26" width="12" height="8" rx="2" style="fill:var(--metal2)"/><path d="M16 17l2-4 2 4 2-4 2 4" style="fill:none;stroke:#2A1D00;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"/></svg>
+      <div class="ttl"><b>전구에 불 켜기 탐구</b><span id="where"></span></div>
+      <button class="btn sm danger" id="delbtn" type="button">내 기록 삭제</button>
+    </div>
+    <div class="prog" id="prog" role="tablist" aria-label="수업 단계"></div>
+  </div>
+  <div id="delbar" hidden>
+    <div class="wrap">
+      <p>내 기록을 모두 지울까요? 지운 기록은 되돌릴 수 없어요.</p>
+      <div class="acts"><button class="btn sm" id="delpdf" type="button">PDF로 먼저 저장하기</button><button class="btn sm dangerfill" id="delyes" type="button">네, 모두 지울게요</button><button class="btn sm" id="delno" type="button">아니요</button></div>
+      <p class="pdfmsg"></p>
+    </div>
+  </div>
+</header>
+
+<div class="wrap"><main id="main" aria-live="polite"></main></div>
+
+<nav class="nav" aria-label="이전 다음">
+  <div class="wrap">
+    <button class="btn" id="prev" type="button">‹ 이전</button>
+    <div class="mid" id="mid"></div>
+    <button class="btn pri" id="next" type="button">다음 ›</button>
+  </div>
+</nav>
+
+<script>
+(function(){
+'use strict';
+var KEY='bulb-circuit-lesson-g6-v1';
+var CIRC=['①','②','③','④','⑤','⑥','⑦','⑧'];
+var PL={'꼭지쇠':'꼭지쇠','꼭지':'꼭지','유리':'유리 부분'};
+var PN={'+':'(+)극','-':'(−)극','none':'연결 안 함'};
+var STEPS=[
+ {n:'탐구 문제 확인',p:'문제 확인'},{n:'전기 부품 살펴보기',p:'관찰'},{n:'예상하기',p:'예상'},
+ {n:'회로 만들어 보기',p:'탐구·조작'},{n:'회로 카드로 확인하기',p:'관찰'},{n:'규칙 찾기',p:'규칙 발견'},
+ {n:'과학적으로 설명하기',p:'설명'},{n:'개념 확인하기',p:'확인'},{n:'한 걸음 더',p:'확장'},{n:'정리하기',p:'정리'}
+];
+var ATT={'꼭지쇠':{R:[224,146],L:[176,146]},'꼭지':{R:[210,182],L:[190,182]},'유리':{R:[244,92],L:[156,92]}};
+function W(a){return a.map(function(x){return {part:x[0],pole:x[1]};});}
+var CARDS=[
+ W([['꼭지쇠','+'],['꼭지','-']]), W([['꼭지쇠','+'],['꼭지','none']]), W([['꼭지쇠','+'],['꼭지쇠','-']]), W([['꼭지쇠','+'],['꼭지','+']]),
+ W([['꼭지쇠','-'],['꼭지','+']]), W([['꼭지','+'],['꼭지','-']]), W([['유리','+'],['꼭지','-']]), W([['꼭지쇠','-'],['꼭지','-']])
+];
+
+/* ---------- 상태 저장 (이 브라우저 안에서만) ---------- */
+function blank(){return {step:0,exp:[],expT:'',guess:'',parts:{},pred:{},predWhy:'',
+  sim:{a:'꼭지쇠',b:'꼭지',bp:'none'},rec:[],rev:{},r1:[],r2:[],r1n:0,r2n:0,r1c:false,r2c:false,rule:'',
+  build:{c:'',p:'',q:''},bc:false,shown:false,ex7:'both',
+  quiz:{q1:'',q2:[null,null,null,null],q3:['',''],q4:['','']},qc:{},
+  sw:{closed:true,tried:false,why:'',txt:'',show:false},ev:{}};}
+var S=load();
+function load(){try{var t=localStorage.getItem(KEY);if(t){var o=JSON.parse(t);return Object.assign(blank(),o);}}catch(e){}return blank();}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+function wipe(){try{localStorage.removeItem(KEY);}catch(e){}S=blank();}
+function setPath(p,v){var k=p.split('.'),o=S;for(var i=0;i<k.length-1;i++){if(o[k[i]]==null)o[k[i]]={};o=o[k[i]];}o[k[k.length-1]]=v;}
+var ui={msg:'',hint2:false};
+
+/* ---------- 회로 그림 ---------- */
+function isLit(w){
+  if(w.some(function(x){return x.pole==='none';}))return false;
+  var a=w.map(function(x){return x.part;}).sort().join(),b=w.map(function(x){return x.pole;}).sort().join();
+  return a==='꼭지,꼭지쇠'&&b==='+,-';
+}
+function sides(w){
+  var s=[null,null];
+  w.forEach(function(x,i){if(x.pole==='+')s[i]='R';else if(x.pole==='-')s[i]='L';});
+  w.forEach(function(x,i){if(s[i]===null){var o=s[1-i];s[i]=o==='L'?'R':o==='R'?'L':(i===0?'L':'R');}});
+  return s;
+}
+var uid=0;
+function circuit(w,o){
+  o=o||{};
+  var id='gl'+(uid++),lit=!o.off&&isLit(w),sd=sides(w),seen={};
+  var att=w.map(function(x,i){
+    var key=x.part+sd[i],k=seen[key]||0;seen[key]=k+1;
+    var p=ATT[x.part][sd[i]],px=p[0],py=p[1];
+    if(x.part==='꼭지')px+=(sd[i]==='R'?8:-8)*k;else py+=14*k;
+    return [px,py];
+  });
+  var rail=[0,0],endY=[0,0],rk=[0,0];
+  ['R','L'].forEach(function(s){
+    var idx=[0,1].filter(function(i){return sd[i]===s;}).sort(function(a,b){return att[a][1]-att[b][1];});
+    idx.forEach(function(i,p){rk[i]=p;});
+    if(idx.length===1){rail[idx[0]]=s==='R'?340:58;endY[idx[0]]=315;}
+    if(idx.length===2){rail[idx[0]]=s==='R'?352:48;endY[idx[0]]=323;rail[idx[1]]=s==='R'?330:70;endY[idx[1]]=307;}
+  });
+  var d=w.map(function(x,i){
+    var s='M'+att[i][0]+' '+att[i][1];
+    if(x.part==='꼭지')s+=' V'+(205+16*rk[i]);
+    s+=' H'+rail[i];
+    if(x.pole==='none')s+=' V268';else s+=' V'+endY[i]+' H'+(x.pole==='+'?294:120);
+    return s;
+  });
+  var col=['var(--wireA)','var(--wireB)'];
+  var h='<svg viewBox="0 0 400 380" role="img" aria-label="전지, 전구, 전선 회로 그림">';
+  h+='<defs><radialGradient id="'+id+'" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#FFE066" stop-opacity=".9"/><stop offset="60%" stop-color="#FFD84D" stop-opacity=".28"/><stop offset="100%" stop-color="#FFD84D" stop-opacity="0"/></radialGradient></defs>';
+  if(lit)h+='<circle cx="200" cy="90" r="112" fill="url(#'+id+')"/>';
+  h+='<circle cx="200" cy="90" r="44" class="bulb-glass'+(lit?' on':'')+'"/>';
+  h+='<path class="fil'+(lit?' on':'')+'" d="M184 148L190 106L194 98L198 106L202 98L206 106L210 98L214 106L214 140L200 172L200 184"/>';
+  h+='<rect x="176" y="130" width="48" height="40" rx="5" class="f-metal st"/><path class="thread" d="M177 142H223M177 152H223M177 162H223"/>';
+  h+='<rect x="190" y="170" width="20" height="14" rx="4" class="f-metal2 st"/>';
+  if(o.inside)h+='<path class="hid" d="M184 148L188 124M214 124L214 140L200 172L200 184"/>';
+  h+='<rect x="120" y="290" width="162" height="50" rx="7" class="f-batt st"/><rect x="282" y="303" width="12" height="24" rx="3" class="f-metal st"/><rect x="120" y="290" width="10" height="50" rx="4" class="f-metal2"/>';
+  h+='<text x="258" y="323" class="sym">+</text><text x="154" y="323" class="sym">−</text>';
+  w.forEach(function(x,i){
+    h+='<path class="wire" d="'+d[i]+'" style="stroke:'+col[i]+'"/>';
+    h+='<circle cx="'+att[i][0]+'" cy="'+att[i][1]+'" r="7" style="fill:'+col[i]+';stroke:var(--surface);stroke-width:2"/>';
+    if(x.pole==='none'){
+      h+='<g transform="translate('+rail[i]+',268)"><rect x="-9" y="0" width="18" height="26" rx="4" style="fill:'+col[i]+'"/><path d="M-9 26L0 40L9 26Z" style="fill:'+col[i]+'"/><path d="M-4 8V22M4 8V22" style="stroke:var(--surface);stroke-width:2"/></g>';
+    }else{
+      h+='<circle cx="'+(x.pole==='+'?294:120)+'" cy="'+endY[i]+'" r="7" style="fill:'+col[i]+';stroke:var(--surface);stroke-width:2"/>';
+    }
+  });
+  if(lit&&!o.print){
+    w.forEach(function(x,i){h+='<path class="flow'+(x.pole==='+'?' rev':'')+'" d="'+d[i]+'"/>';});
+    var ip='M184 148L190 106L194 98L198 106L202 98L206 106L210 98L214 106L214 140L200 172L200 184';
+    var plusOnShell=w.some(function(x){return x.pole==='+'&&x.part==='꼭지쇠';});
+    h+='<path class="flow'+(plusOnShell?'':' rev')+'" d="'+ip+'"/>';
+  }
+  if(o.labels){h+='<text x="262" y="92" class="lbl">전구</text><text x="200" y="366" class="lbl" text-anchor="middle">전지</text>';}
+  h+='</svg>';
+  return o.print?printSVG(h):h;
+}
+function describe(w){
+  return w.map(function(x,i){return '전선 '+CIRC[i]+': '+PL[x.part]+' ↔ '+PN[x.pole];}).join(' / ');
+}
+
+/* 스위치 그림 */
+function swSVG(closed){
+  var h='<svg viewBox="0 0 400 300" role="img" aria-label="스위치가 있는 전기 회로">';
+  h+='<defs><radialGradient id="swg" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#FFE066" stop-opacity=".9"/><stop offset="60%" stop-color="#FFD84D" stop-opacity=".28"/><stop offset="100%" stop-color="#FFD84D" stop-opacity="0"/></radialGradient></defs>';
+  if(closed)h+='<circle cx="200" cy="70" r="90" fill="url(#swg)"/>';
+  h+='<circle cx="200" cy="70" r="36" class="bulb-glass'+(closed?' on':'')+'"/>';
+  h+='<path class="fil'+(closed?' on':'')+'" d="M188 108L192 82L196 76L200 82L204 76L208 82L212 76L212 108"/>';
+  h+='<rect x="182" y="102" width="36" height="32" rx="5" class="f-metal st"/><rect x="192" y="134" width="16" height="12" rx="3" class="f-metal2 st"/>';
+  h+='<rect x="130" y="240" width="154" height="46" rx="7" class="f-batt st"/><rect x="284" y="252" width="12" height="22" rx="3" class="f-metal st"/><rect x="130" y="240" width="10" height="46" rx="4" class="f-metal2"/>';
+  h+='<text x="262" y="272" class="sym">+</text><text x="162" y="272" class="sym">−</text>';
+  var wa='M200 148V175H330V190',wb='M330 232V263H296',wc='M182 118H60V263H130';
+  h+='<path class="wire" d="'+wa+'" style="stroke:var(--wireA)"/><path class="wire" d="'+wb+'" style="stroke:var(--wireA)"/><path class="wire" d="'+wc+'" style="stroke:var(--wireB)"/>';
+  h+='<circle cx="330" cy="190" r="7" style="fill:var(--ink2)"/><circle cx="330" cy="232" r="7" style="fill:var(--ink2)"/>';
+  h+=closed?'<line class="lever" x1="330" y1="232" x2="330" y2="190"/>':'<line class="lever" x1="330" y1="232" x2="360" y2="200"/>';
+  h+='<text x="346" y="222" class="lbl">스위치</text>';
+  if(closed){
+    h+='<path class="flow" d="M296 263H330V175H200V148"/><path class="flow" d="M182 118H60V263H130"/>';
+  }
+  return h+'</svg>';
+}
+
+/* 부품 그림 */
+function hs(n,x,y,x2,y2){return '<g class="hs"><line x1="'+x+'" y1="'+y+'" x2="'+x2+'" y2="'+y2+'"/><circle cx="'+x+'" cy="'+y+'" r="14"/><text x="'+x+'" y="'+(y+5)+'">'+CIRC[n-1]+'</text></g>';}
+function partBattery(){
+  return '<svg viewBox="0 0 280 150" role="img" aria-label="전지 그림"><rect x="50" y="45" width="150" height="60" rx="7" class="f-batt st"/><rect x="200" y="62" width="14" height="26" rx="3" class="f-metal st"/><rect x="50" y="45" width="8" height="60" rx="3" class="f-metal2"/><text x="170" y="86" class="sym">+</text><text x="88" y="86" class="sym">−</text>'+hs(1,248,75,214,75)+hs(2,20,75,50,75)+'</svg>';
+}
+function partBulb(){
+  return '<svg viewBox="0 0 280 210" role="img" aria-label="전구 그림"><circle cx="110" cy="80" r="52" class="bulb-glass"/><path class="fil" d="M98 124L102 92L106 84L110 92L114 84L118 92L122 84L126 92L126 126"/><rect x="78" y="125" width="64" height="44" rx="5" class="f-metal st"/><path class="thread" d="M79 138H141M79 150H141M79 161H141"/><rect x="96" y="169" width="28" height="16" rx="4" class="f-metal2 st"/>'+hs(3,236,40,120,76)+hs(4,236,138,142,140)+hs(5,236,180,124,178)+'</svg>';
+}
+function partWire(){
+  return '<svg viewBox="0 0 280 150" role="img" aria-label="집게 달린 전선 그림"><path class="wire" d="M62 100C110 20 180 150 224 78" style="stroke:var(--wireA)"/><g transform="translate(224,78) rotate(-35)"><rect x="-6" y="-12" width="44" height="24" rx="5" style="fill:var(--wireA)"/><path d="M38 -8L56 -4V4L38 8Z" style="fill:var(--metal2)"/><path d="M8 -8V8M16 -8V8" style="stroke:var(--surface);stroke-width:2"/></g><g transform="translate(62,100) rotate(200)"><rect x="-6" y="-12" width="44" height="24" rx="5" style="fill:var(--wireA)"/><path d="M38 -8L56 -4V4L38 8Z" style="fill:var(--metal2)"/></g>'+hs(6,238,28,248,62)+'</svg>';
+}
+
+/* ---------- 단계별 화면 ---------- */
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function ta(model,val,ph,rows){return '<textarea data-model="'+model+'" placeholder="'+esc(ph)+'" rows="'+(rows||3)+'">'+esc(val)+'</textarea>';}
+function sel(model,list,cur,re){return '<select data-model="'+model+'"'+(re?' data-re="1"':'')+'><option value="">고르기</option>'+list.map(function(x){return '<option value="'+esc(x)+'"'+(x===cur?' selected':'')+'>'+esc(x)+'</option>';}).join('')+'</select>';}
+function phase(t){return '<span class="phase">'+t+'</span>';}
+
+function s1(){
+  var ex=['어두운 곳에서 손전등을 켜 본 적이 있어요.','저녁에 스위치를 눌러 방에 전등을 켠 적이 있어요.'];
+  return '<section class="card">'+phase('문제 확인')+'<p class="eyebrow">과학 6-2 · 3. 전기의 이용</p><h1>전구에 불을 켜려면 어떻게 해야 할까요?</h1>'+
+  '<p>어두운 방에서는 전등을 켜서 주위를 밝혀요. 잠자기 전에는 전등을 꺼서 주위를 어둡게 해요. 전구에 불은 어떻게 켜질까요? 전지, 전구, 전선을 연결해서 전구에 불이 켜지는 조건을 알아봐요.</p>'+
+  '<div class="room">'+circuit(W([['꼭지쇠','none'],['꼭지','none']]),{labels:true})+'</div><p class="cap">전지, 전구, 전선이 있어요. 아직 전구에 불이 켜지지 않았어요.</p></section>'+
+  '<section class="card"><h2>오늘 알아볼 것</h2><ul class="plain goal">'+
+  '<li><span class="tag">태도</span><span>전구에 불이 켜지는 조건을 적극적으로 찾아봐요.</span></li>'+
+  '<li><span class="tag">탐구</span><span>전지, 전구, 전선을 연결해 불을 켜 보고, 불이 켜지는 전기 회로와 켜지지 않는 전기 회로를 비교해요.</span></li>'+
+  '<li><span class="tag">지식</span><span>전구에 불이 켜지는 전기 회로의 특징을 설명해요.</span></li></ul>'+
+  '<div class="flowchips"><span>예상하기</span>›<span>관찰하기</span>›<span>설명하기</span></div></section>'+
+  '<section class="card"><h2>내 경험 떠올리기</h2><p class="q">전구에 불을 켜 본 경험을 이야기해 볼까요?</p><div style="display:grid;gap:8px;margin-bottom:14px">'+
+  ex.map(function(t,i){var on=S.exp.indexOf(i)>=0;return '<label class="check'+(on?' sel':'')+'"><input type="checkbox" data-chk="exp" data-id="'+i+'"'+(on?' checked':'')+'><span>'+t+'</span></label>';}).join('')+'</div>'+
+  '<p class="q">어떻게 했을 때 전구에 불이 켜지기도 하고 꺼지기도 할까요? 내 생각을 써 봐요.</p>'+ta('guess',S.guess,'생각나는 대로 써 보세요.',3)+
+  '<p class="muted" style="margin:10px 0 0;font-size:.9rem">이름이나 번호는 쓰지 않아요. 쓴 내용은 이 기기의 브라우저에만 저장돼요.</p></section>';
+}
+
+var ANS={1:'(+)극',2:'(−)극',3:'필라멘트',4:'꼭지쇠',5:'꼭지',6:'집게'};
+var NAMES6=['(+)극','(−)극','필라멘트','꼭지쇠','꼭지','집게'];
+function s2(){
+  var rows='';
+  for(var n=1;n<=6;n++){
+    var cur=S.parts[n]||'',fb='';
+    if(cur)fb=cur===ANS[n]?'<span class="fb ok">맞아요</span>':'<span class="fb no">다시 골라 봐요</span>';
+    rows+='<div class="rowsel"><span class="n">'+CIRC[n-1]+'</span>'+sel('parts.'+n,NAMES6,cur,true)+'<span>'+fb+'</span></div>';
+  }
+  var ok=0;for(var k=1;k<=6;k++)if(S.parts[k]===ANS[k])ok++;
+  return '<section class="card">'+phase('관찰')+'<h2>전기 부품 살펴보기</h2><p>전지, 전구, 집게 달린 전선을 잘 관찰해요. 그림의 번호에 알맞은 이름을 골라 봐요.</p>'+
+  '<div class="pgrid"><div class="stage"><p class="cap" style="margin:0 0 4px">전지</p>'+partBattery()+'</div><div class="stage"><p class="cap" style="margin:0 0 4px">전구</p>'+partBulb()+'</div><div class="stage"><p class="cap" style="margin:0 0 4px">집게 달린 전선</p>'+partWire()+'</div></div></section>'+
+  '<section class="card"><h3>이름 고르기</h3>'+rows+'<p class="muted" style="margin:6px 0 0">맞힌 이름: '+ok+' / 6</p>'+
+  '<div style="margin-top:10px"><button class="btn sm" data-act="hint2" type="button">'+(ui.hint2?'힌트 닫기':'힌트 보기')+'</button></div>'+
+  (ui.hint2?'<div class="note" style="margin-top:10px">전지에서 볼록하게 튀어나온 부분이 (+)극, 평평한 부분이 (−)극이에요. 전구에서 금속으로 된 옆면은 꼭지쇠, 아랫부분은 꼭지라고 해요. 전선은 끝부분에 집게가 있어요.</div>':'')+'</section>';
+}
+
+function s3(){
+  var n=0;for(var i=1;i<=8;i++)if(S.pred[i])n++;
+  var cards=CARDS.map(function(c,i){
+    var p=S.pred[i+1];
+    return '<div class="mini"><h4><span>회로 카드 '+CIRC[i]+'</span></h4>'+circuit(c,{off:true})+
+    '<div class="two"><button type="button" data-act="pred" data-i="'+(i+1)+'" data-v="on" aria-pressed="'+(p==='on')+'">켜질 것 같아요</button><button type="button" data-act="pred" data-i="'+(i+1)+'" data-v="off" aria-pressed="'+(p==='off')+'">안 켜질 것 같아요</button></div></div>';
+  }).join('');
+  return '<section class="card">'+phase('예상')+'<h2>어떤 전구에 불이 켜질까요?</h2><p>회로 카드 ①~⑧을 보고, 전구에 불이 켜질지 예상해 봐요. 아직 정답을 몰라도 괜찮아요.</p><p class="muted" style="margin:0">예상한 카드: <b>'+n+' / 8</b></p></section>'+
+  '<section class="card"><div class="grid8">'+cards+'</div></section>'+
+  '<section class="card"><p class="q">그렇게 예상한 까닭을 써 봐요. 모둠 친구와 이야기해 보아도 좋아요.</p>'+ta('predWhy',S.predWhy,'예: 전선이 이어져 있어서 켜질 것 같아요.',3)+'</section>';
+}
+
+function simCfg(){return [{part:S.sim.a,pole:'+'},{part:S.sim.b,pole:S.sim.bp}];}
+function seg(k,list,cur,labfn){return '<div class="seg">'+list.map(function(v){return '<button type="button" data-act="sim" data-k="'+k+'" data-v="'+v+'" aria-pressed="'+(cur===v)+'">'+labfn(v)+'</button>';}).join('')+'</div>';}
+function simHTML(){
+  var w=simCfg(),lit=isLit(w);
+  var nOn=S.rec.filter(function(r){return r.lit;}).length,nOff=S.rec.length-nOn;
+  var rows=S.rec.map(function(r,i){
+    return '<tr><td>'+(i+1)+'</td><td>'+PL[r.a]+'</td><td>'+PL[r.b]+'</td><td>'+PN[r.bp]+'</td><td class="res'+(r.lit?' on':'')+'">'+(r.lit?'켜짐':'안 켜짐')+'</td><td><button class="btn sm" type="button" data-act="recdel" data-i="'+i+'" aria-label="'+(i+1)+'번 기록 지우기">×</button></td></tr>';
+  }).join('');
+  return '<div class="split"><div><div class="stage">'+circuit(w,{labels:true})+'</div>'+
+  '<div class="status"><span class="badge '+(lit?'on':'off')+'">'+(lit?'불이 켜졌어요':'불이 켜지지 않았어요')+'</span><p>'+describe(w)+'</p></div></div>'+
+  '<div><div class="ctl"><span class="lab"><i class="wdot" style="background:var(--wireA)"></i>전선 ①의 전구 쪽 끝 <small>(전지 쪽은 (+)극에 연결)</small></span>'+seg('a',['꼭지쇠','꼭지','유리'],S.sim.a,function(v){return PL[v];})+'</div>'+
+  '<div class="ctl"><span class="lab"><i class="wdot" style="background:var(--wireB)"></i>전선 ②의 전구 쪽 끝</span>'+seg('b',['꼭지쇠','꼭지','유리'],S.sim.b,function(v){return PL[v];})+'</div>'+
+  '<div class="ctl"><span class="lab"><i class="wdot" style="background:var(--wireB)"></i>전선 ②의 전지 쪽 끝</span>'+seg('bp',['+','-','none'],S.sim.bp,function(v){return PN[v];})+'</div>'+
+  '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn pri" type="button" data-act="simrec">이 결과 기록하기</button><button class="btn" type="button" data-act="simreset">처음 모습으로</button></div>'+
+  (ui.msg?'<p class="fb" style="margin:8px 0 0;color:var(--warn)">'+ui.msg+'</p>':'')+'</div></div>'+
+  '<h3 style="margin-top:20px">내 실험 기록 <span class="muted" style="font-weight:600;font-size:.9rem">(켜짐 '+nOn+' · 안 켜짐 '+nOff+')</span></h3>'+
+  (S.rec.length?'<div class="tablewrap"><table><thead><tr><th>번호</th><th>전선 ①<br>전구 쪽</th><th>전선 ②<br>전구 쪽</th><th>전선 ②<br>전지 쪽</th><th>결과</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>':'<p class="muted">아직 기록이 없어요. 연결을 바꿔 보고 &lt;이 결과 기록하기&gt;를 눌러요.</p>');
+}
+function s4(){
+  return '<section class="card">'+phase('탐구·조작')+'<h2>전선을 바꿔 연결해 보기</h2><p>전선의 끝을 바꾸면서 전구에 불이 켜지는지 관찰해요. 불이 켜지는 경우와 켜지지 않는 경우를 여러 번 찾아 기록해 봐요.</p>'+
+  '<p class="muted" style="margin:0">궁금한 점: 전구의 꼭지쇠와 꼭지를 서로 바꾸어 연결하면 어떻게 될까요?</p></section>'+
+  '<section class="card" id="simwrap">'+simHTML()+'</section>'+
+  '<section class="card soft"><p style="margin:0"><b>실제로 실험할 때</b> 보호 장갑과 실험복을 입어요. 전구가 떨어지면 깨지기 쉬우니 조심해요. 전지와 전구는 고무찰흙으로 고정하고, 쓴 전지는 폐건전지 수거함에 버려요.</p></section>';
+}
+
+function s5(){
+  var nrev=0;for(var i=1;i<=8;i++)if(S.rev[i])nrev++;
+  var cards=CARDS.map(function(c,i){
+    var n=i+1,r=!!S.rev[n],lit=isLit(c),p=S.pred[n],res='';
+    if(r){
+      res='<b>'+(lit?'불이 켜졌어요':'불이 켜지지 않았어요')+'</b><br>'+(p?('내 예상: '+(p==='on'?'켜짐':'안 켜짐')+' → <span class="fb '+((p==='on')===lit?'ok':'no')+'">'+((p==='on')===lit?'예상과 같아요':'예상과 달랐어요')+'</span>'):'<span class="muted">예상하지 않은 카드예요</span>');
+    }
+    return '<div class="mini'+(r&&lit?' on':'')+'"><h4><span>회로 카드 '+CIRC[i]+'</span></h4>'+circuit(c,{off:!r})+
+    (r?'<div class="res">'+res+'</div>':'<button class="btn sm pri" type="button" data-act="rev" data-i="'+n+'">전기 연결해 보기</button>')+'</div>';
+  }).join('');
+  var on=[],off=[];
+  CARDS.forEach(function(c,i){if(S.rev[i+1]){(isLit(c)?on:off).push('<b>'+CIRC[i]+'</b>');}});
+  return '<section class="card">'+phase('관찰')+'<h2>회로 카드로 확인하기</h2><p>카드마다 &lt;전기 연결해 보기&gt;를 눌러 전구에 불이 켜지는지 관찰해요. 예상과 비교해 봐요.</p>'+
+  '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="muted">확인한 카드 <b>'+nrev+' / 8</b></span><button class="btn sm" type="button" data-act="revall">모두 연결해 보기</button></div></section>'+
+  '<section class="card"><div class="grid8">'+cards+'</div></section>'+
+  '<section class="card"><h2>불이 켜진 것과 켜지지 않은 것으로 나누기</h2><div class="board"><div class="box on"><h3>전구에 불이 켜지는 것</h3><div class="nums">'+(on.join('')||'<span class="muted">아직 없어요</span>')+'</div></div><div class="box"><h3>전구에 불이 켜지지 않는 것</h3><div class="nums">'+(off.join('')||'<span class="muted">아직 없어요</span>')+'</div></div></div></section>';
+}
+
+var LST1=[
+ {id:'L3',ok:false,t:'두 전선이 모두 전구의 꼭지쇠에 연결되어 있다.',w:'카드 ③처럼 두 전선이 모두 꼭지쇠에 연결되면 불이 켜지지 않아요.'},
+ {id:'L1',ok:true,t:'전지, 전구, 전선이 끊어지지 않고 이어져 있다.',w:'불이 켜진 카드 ①, ⑤는 전선이 끊어지지 않고 이어져 있어요.'},
+ {id:'L5',ok:false,t:'꼭지쇠가 꼭 (+)극에 연결되어야 한다.',w:'카드 ⑤에서는 꼭지쇠가 (−)극에 연결되어도 불이 켜졌어요.'},
+ {id:'L2',ok:true,t:'전구의 꼭지쇠와 꼭지가 전지의 (+)극과 (−)극에 하나씩 연결되어 있다.',w:'카드 ①, ⑤ 모두 꼭지쇠와 꼭지가 (+)극과 (−)극에 하나씩 연결되어 있어요.'},
+ {id:'L6',ok:false,t:'전선이 전구의 유리 부분에 연결되어 있다.',w:'카드 ⑦은 전선이 유리 부분에 연결되어 불이 켜지지 않아요.'},
+ {id:'L4',ok:false,t:'빨간 전선은 항상 (+)극에 연결되어 있다.',w:'카드 ⑤에서는 빨간 전선이 (−)극에 연결되어도 불이 켜졌어요.'}
+];
+var LST2=[
+ {id:'U5',ok:false,t:'전선이 전지의 (+)극에 연결되어 있다.',w:'카드 ①도 전선이 (+)극에 연결되어 있지만 불이 켜져요.'},
+ {id:'U1',ok:true,t:'전선이 끊어져서 전지에 닿지 않는 곳이 있다.',w:'카드 ②는 전선 한쪽이 전지에 닿지 않아요.'},
+ {id:'U3',ok:true,t:'두 전선이 모두 전구의 꼭지쇠(또는 모두 꼭지)에만 연결되어 있다.',w:'카드 ③, ⑥은 두 전선이 모두 꼭지쇠(또는 꼭지)에 연결되어 있어요.'},
+ {id:'U6',ok:false,t:'전선이 전구의 꼭지에 연결되어 있다.',w:'카드 ①, ⑤도 꼭지에 연결되어 있지만 불이 켜져요.'},
+ {id:'U2',ok:true,t:'전구가 전지의 한쪽 극에만 연결되어 있다.',w:'카드 ④, ⑧은 전구가 전지의 한쪽 극에만 연결되어 있어요.'},
+ {id:'U4',ok:true,t:'전선이 전구의 유리 부분에 연결되어 있다.',w:'카드 ⑦은 전선이 전구의 유리 부분에 연결되어 있어요.'}
+];
+function ruleList(g,list,title,desc){
+  var sel=S[g],chk=S[g+'c'],att=S[g+'n'];
+  var items=list.map(function(it){
+    var on=sel.indexOf(it.id)>=0,cls='check',why='';
+    if(chk){
+      if(on&&it.ok){cls+=' ok';why='<span class="why">맞아요. '+it.w+'</span>';}
+      else if(on&&!it.ok){cls+=' no';why='<span class="why">다시 생각해 봐요.'+(att>=2?' '+it.w:' 카드와 내 기록을 다시 살펴봐요.')+'</span>';}
+      else if(!on&&it.ok&&att>=2){cls+=' miss';why='<span class="why">빠뜨렸어요. '+it.w+'</span>';}
+    }else if(on)cls+=' sel';
+    return '<label class="'+cls+'"><input type="checkbox" data-chk="'+g+'" data-id="'+it.id+'"'+(on?' checked':'')+'><span>'+it.t+why+'</span></label>';
+  }).join('');
+  var wrong=0,miss=0;
+  list.forEach(function(it){var on=sel.indexOf(it.id)>=0;if(on&&!it.ok)wrong++;if(!on&&it.ok)miss++;});
+  var sum='';
+  if(chk){
+    if(!wrong&&!miss)sum='<p class="fb ok" style="margin:10px 0 0">모두 맞게 골랐어요!</p>';
+    else sum='<p class="fb no" style="margin:10px 0 0">'+(wrong?'틀리게 고른 것이 '+wrong+'개 있어요. ':'')+(miss?'빠뜨린 것이 있어요. ':'')+'다시 골라 보세요.</p>';
+  }
+  return '<section class="card"><h2>'+title+'</h2><p>'+desc+'</p><div style="display:grid;gap:8px">'+items+'</div>'+
+  '<div style="margin-top:12px"><button class="btn pri" type="button" data-act="rcheck" data-g="'+g+'">확인하기</button></div>'+sum+'</section>';
+}
+function s6(){
+  var nOn=S.rec.filter(function(r){return r.lit;}).length,nOff=S.rec.length-nOn;
+  var cOn=0,cOff=0;CARDS.forEach(function(c,i){if(S.rev[i+1]){if(isLit(c))cOn++;else cOff++;}});
+  return '<section class="card">'+phase('규칙 발견')+'<h2>불이 켜지는 규칙 찾기</h2><p>내 실험 기록과 회로 카드를 다시 떠올려 봐요. 불이 켜진 것끼리 비교하고, 켜지지 않은 것과도 비교해서 규칙을 찾아봐요.</p>'+
+  '<div class="sum"><div><b>'+nOn+'</b><span>내 기록에서 켜진 횟수</span></div><div><b>'+nOff+'</b><span>내 기록에서 안 켜진 횟수</span></div><div><b>'+cOn+'</b><span>카드에서 켜진 것</span></div><div><b>'+cOff+'</b><span>카드에서 안 켜진 것</span></div></div>'+
+  (S.rec.length+cOn+cOff===0?'<p class="note" style="margin:12px 0 0">앞 단계에서 실험과 카드 확인을 먼저 해 보면 규칙을 찾기 쉬워요.</p>':'')+'</section>'+
+  ruleList('r1',LST1,'불이 켜진 회로의 특징','알맞은 것을 모두 골라요.')+
+  ruleList('r2',LST2,'불이 켜지지 않은 회로의 특징','알맞은 것을 모두 골라요.')+
+  '<section class="card"><h2>내가 찾은 규칙</h2><p>전구에 불이 켜지는 조건을 내 말로 써 봐요.</p>'+ta('rule',S.rule,'전구에 불이 켜지려면 …',3)+'</section>';
+}
+
+var B_C=['끊어져야 해요','끊기지 않아야 해요'],B_P=['꼭지쇠와 꼭지 둘 다','꼭지쇠 한 곳만','꼭지 한 곳만'],B_Q=['(+)극과 (−)극 둘 다','(+)극 한 곳만','(−)극 한 곳만'];
+function brow(k,list,lab,right){
+  var cur=S.build[k],fb='';
+  if(S.bc&&cur)fb=cur===right?'<span class="fb ok">맞아요</span>':'<span class="fb no">다시 골라 봐요</span>';
+  return '<div class="rowsel" style="grid-template-columns:minmax(0,1fr)"><span>'+lab+'</span><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">'+sel('build.'+k,list,cur,false)+fb+'</div></div>';
+}
+function s7(){
+  var ex=S.ex7==='one'?W([['꼭지쇠','+'],['꼭지쇠','-']]):W([['꼭지쇠','+'],['꼭지','-']]);
+  var h='<section class="card">'+phase('설명')+'<h2>내 말로 설명해 보기</h2><p>찾은 규칙을 문장으로 완성해 봐요.</p>'+
+  brow('c',B_C,'전지, 전구, 전선의 연결은',B_C[1])+brow('p',B_P,'전구에서 전선을 연결하는 곳은',B_P[0])+brow('q',B_Q,'전지에서 전선을 연결하는 곳은',B_Q[0])+
+  '<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn pri" type="button" data-act="bcheck">확인하기</button><button class="btn" type="button" data-act="showexp">'+(S.shown?'과학적 설명 닫기':'과학적 설명 보기')+'</button></div></section>';
+  if(S.shown){
+    h+='<section class="card"><h2>과학적 설명</h2>'+
+    '<div class="quote"><b>전기 회로</b>: 전지, 전구, 전선과 같은 여러 가지 전기 부품을 연결하여 전기가 흐르도록 한 것이에요.</div>'+
+    '<p>전기 회로에 전기가 흘러야 전구에 불이 켜져요. 전지, 전구, 전선의 연결이 끊어지지 않아야 하고, 전구의 꼭지쇠와 꼭지가 전지의 (+)극과 (−)극에 각각 연결되어야 해요.</p>'+
+    '<div class="room" style="background:var(--surface2)">'+circuit(W([['꼭지쇠','+'],['꼭지','-']]),{labels:true})+'</div><p class="cap">노란 점이 전기가 흐르는 길이에요.</p>'+
+    '</section><section class="card"><h2>왜 꼭지와 꼭지쇠에 나누어 연결할까요?</h2><p>전구 안에는 필라멘트가 있고, 필라멘트는 꼭지와 꼭지쇠에 각각 이어져 있어요. 전지를 전구의 꼭지쇠에만 연결하면 전기가 흐르는 길이 끊어져서 불이 켜지지 않아요.</p>'+
+    '<div class="seg" style="margin-bottom:10px"><button type="button" data-act="ex7" data-v="one" aria-pressed="'+(S.ex7==='one')+'">꼭지쇠에만 연결</button><button type="button" data-act="ex7" data-v="both" aria-pressed="'+(S.ex7==='both')+'">꼭지쇠와 꼭지에 연결</button></div>'+
+    '<div class="stage">'+circuit(ex,{inside:true})+'</div><p class="cap">점선은 전구 안쪽에서 전기가 지나는 길이에요.</p>'+
+    '<div class="quote"><b>필라멘트</b>: 전구에서 빛이 나는 부분이에요. 필라멘트에 전기가 흐르면 뜨거워지면서 빛을 내요. 필라멘트가 끊어지면 전구에 불이 켜지지 않아요.</div></section>'+
+    '<section class="card soft"><h3>내가 쓴 규칙과 비교해 봐요</h3><p style="margin:0">'+(S.rule.trim()?'내 규칙: “'+esc(S.rule)+'”':'<span class="muted">앞 단계에서 쓴 규칙이 아직 없어요.</span>')+'</p></section>';
+  }
+  return h;
+}
+
+function qfb(id,okmsg,hint){
+  if(!S.qc[id])return '';
+  var ok=qOK(id);
+  return ok?'<div class="say" style="margin-top:10px"><span class="fb ok">맞아요.</span> '+okmsg+'</div>':'<p class="fb no" style="margin:10px 0 0">다시 생각해 봐요. '+hint+'</p>';
+}
+var Q2ANS=['x','o','x','o'];
+var Q2C=[W([['꼭지','+'],['꼭지','-']]),W([['꼭지쇠','-'],['꼭지','+']]),W([['꼭지쇠','+'],['꼭지','none']]),W([['꼭지쇠','+'],['꼭지','-']])];
+var Q3C=[W([['꼭지쇠','+'],['꼭지쇠','-']]),W([['꼭지쇠','-'],['꼭지','-']])];
+var Q3O=['전선이 끊어져 있기 때문이다.','전지의 극이 모두 전구의 꼭지쇠에 연결되었기 때문이다.','전구가 전지의 (−)극에만 연결되었기 때문이다.','전선의 색깔이 서로 다르기 때문이다.'];
+var Q3A=[Q3O[1],Q3O[2]];
+function qOK(id){
+  var q=S.quiz;
+  if(id==='q1')return q.q1==='끊기지 않게';
+  if(id==='q2')return q.q2.every(function(v,i){return v===Q2ANS[i];});
+  if(id==='q3')return q.q3[0]===Q3A[0]&&q.q3[1]===Q3A[1];
+  if(id==='q4')return q.q4[0]==='전구'&&q.q4[1]==='전기 회로';
+  return false;
+}
+function s8(){
+  var q=S.quiz;
+  var q2=Q2C.map(function(c,i){
+    return '<div class="item"><div class="stage" style="padding:4px">'+circuit(c,{off:true})+'</div><div class="oxrow"><button type="button" data-act="q2" data-i="'+i+'" data-v="o" aria-pressed="'+(q.q2[i]==='o')+'">○</button><button type="button" data-act="q2" data-i="'+i+'" data-v="x" aria-pressed="'+(q.q2[i]==='x')+'">×</button></div></div>';
+  }).join('');
+  var q3=Q3C.map(function(c,i){
+    return '<div class="item"><div class="stage" style="padding:4px">'+circuit(c,{off:true})+'</div>'+sel('quiz.q3.'+i,Q3O,q.q3[i],false).replace('<select','<select data-qid="q3"')+'</div>';
+  }).join('');
+  var done=['q1','q2','q3','q4'].filter(function(k){return S.qc[k]&&qOK(k);}).length;
+  return '<section class="card">'+phase('확인')+'<h2>개념 확인하기</h2><p>배운 내용을 문제로 확인해 봐요. 틀려도 다시 풀 수 있어요.</p><p class="muted" style="margin:0">맞힌 문제 <b>'+done+' / 4</b></p></section>'+
+  '<section class="card"><h3>문제 1</h3><p>전구에 불을 켜려면 전지, 전구, 전선을 ( ) 연결해야 해요.</p>'+sel('quiz.q1',['끊어지게','끊기지 않게'],q.q1,false).replace('<select','<select data-qid="q1"')+
+  '<div style="margin-top:10px"><button class="btn sm pri" type="button" data-act="qcheck" data-q="q1">확인</button></div>'+qfb('q1','전지, 전구, 전선이 끊기지 않게 연결되면 전기 회로에 전기가 흘러 전구에 불이 켜져요.','전구에 불이 켜진 카드의 전선은 어땠는지 떠올려 봐요.')+'</section>'+
+  '<section class="card"><h3>문제 2</h3><p>전지, 전구, 전선을 연결했어요. 전구에 불이 켜지면 ○, 켜지지 않으면 × 표시를 해 봐요.</p><div class="qgrid">'+q2+'</div>'+
+  '<div style="margin-top:10px"><button class="btn sm pri" type="button" data-act="qcheck" data-q="q2">확인</button></div>'+qfb('q2','전구의 꼭지쇠와 꼭지가 전지의 (+)극과 (−)극에 각각 연결되어야 전구에 불이 켜져요.','꼭지쇠와 꼭지가 각각 어디에 연결되어 있는지 살펴봐요.')+'</section>'+
+  '<section class="card"><h3>문제 3</h3><p>전구에 불이 켜지지 않는 까닭을 골라 봐요.</p><div class="qgrid">'+q3+'</div>'+
+  '<div style="margin-top:10px"><button class="btn sm pri" type="button" data-act="qcheck" data-q="q3">확인</button></div>'+qfb('q3','전구가 전지의 (+)극과 (−)극에 각각 연결되지 않으면 전기가 흐르지 않아 불이 켜지지 않아요.','전선이 전구와 전지의 어디에 연결되어 있는지 하나씩 따라가 봐요.')+'</section>'+
+  '<section class="card"><h3>문제 4</h3><p>전지, ('+sel('quiz.q4.0',['전구','전지','집게'],q.q4[0],false).replace('<select','<select data-qid="q4"')+') 전선과 같은 전기 부품을 연결하여 전기가 흐르도록 한 것을 ('+sel('quiz.q4.1',['전기 회로','필라멘트','꼭지쇠'],q.q4[1],false).replace('<select','<select data-qid="q4"')+')(이)라고 해요.</p>'+
+  '<div style="margin-top:10px"><button class="btn sm pri" type="button" data-act="qcheck" data-q="q4">확인</button></div>'+qfb('q4','전지, 전구, 전선을 연결하여 전기가 흐르도록 한 것을 전기 회로라고 해요.','앞에서 배운 용어를 다시 떠올려 봐요.')+'</section>';
+}
+
+function s9(){
+  var c=S.sw.closed;
+  var h='<section class="card">'+phase('확장')+'<h2>스위치는 어떤 일을 할까요?</h2><p>손전등에서 스위치를 켜면 전구에 불이 켜지고, 스위치를 끄면 전구의 불이 꺼져요. 스위치를 눌러 보면서 관찰해 봐요.</p>'+
+  '<div class="stage">'+swSVG(c)+'</div><div class="status"><span class="badge '+(c?'on':'off')+'">'+(c?'스위치 켬 · 불이 켜졌어요':'스위치 끔 · 불이 꺼졌어요')+'</span></div>'+
+  '<div style="margin-top:12px;text-align:center"><button class="btn pri" type="button" data-act="swtoggle">스위치 '+(c?'끄기':'켜기')+'</button></div></section>';
+  var ok=S.sw.why==='전기 회로가 끊어져 전기가 흐르지 않기 때문이다.';
+  h+='<section class="card"><h3>스위치를 껐을 때 불이 꺼지는 까닭은 무엇일까요?</h3>'+sel('sw.why',['전기 회로가 끊어져 전기가 흐르지 않기 때문이다.','전지가 없어지기 때문이다.','전구가 깨지기 때문이다.'],S.sw.why,true)+
+  (S.sw.why?'<p class="fb '+(ok?'ok':'no')+'" style="margin:10px 0 0">'+(ok?'맞아요. 스위치를 끄면 전기 회로가 끊어져요.':'다시 생각해 봐요. 스위치를 끄면 전선이 이어져 있는지 살펴봐요.')+'</p>':'')+'</section>'+
+  '<section class="card"><h3>전기를 사용할 때 스위치는 어떤 점에서 유용할까요?</h3>'+ta('sw.txt',S.sw.txt,'내 생각을 써 봐요.',3)+
+  '<div style="margin-top:10px"><button class="btn sm" type="button" data-act="swshow">'+(S.sw.show?'예시 닫기':'예시 생각 보기')+'</button></div>'+
+  (S.sw.show?'<div class="say" style="margin-top:10px">스위치는 전기 회로를 끊거나 연결해 줘요. 필요하지 않을 때는 전기가 흐르지 않아 전기를 아껴 쓰고 안전하게 쓸 수 있어요.</div>':'')+'</section>';
+  return h;
+}
+
+var EV=[['m','전기 회로를 만드는 활동에 흥미를 가지고 참여했어요.','태도'],['p','전구에 불이 켜지는 전기 회로와 켜지지 않는 전기 회로를 비교할 수 있어요.','탐구'],['k','전구에 불이 켜지는 전기 회로의 특징을 설명할 수 있어요.','지식']];
+var EL=[['3','잘할 수 있어요'],['2','조금 할 수 있어요'],['1','더 연습해야 해요']];
+function s10(){
+  var hit=0,seen=0;
+  CARDS.forEach(function(c,i){var n=i+1;if(S.rev[n]&&S.pred[n]){seen++;if((S.pred[n]==='on')===isLit(c))hit++;}});
+  var nOn=S.rec.filter(function(r){return r.lit;}).length;
+  var quizOk=['q1','q2','q3','q4'].filter(function(k){return S.qc[k]&&qOK(k);}).length;
+  var ev=EV.map(function(e){
+    return '<div class="ev"><span><span class="tag">'+e[2]+'</span> '+e[1]+'</span><div class="seg">'+EL.map(function(l){return '<button type="button" data-act="ev" data-k="'+e[0]+'" data-v="'+l[0]+'" aria-pressed="'+(S.ev[e[0]]===l[0])+'">'+l[1]+'</button>';}).join('')+'</div></div>';
+  }).join('');
+  return '<section class="card">'+phase('정리')+'<h2>오늘 배운 것 정리하기</h2><div class="sum">'+
+  '<div><b>'+(seen?hit+' / '+seen:'-')+'</b><span>예상이 맞은 카드</span></div><div><b>'+S.rec.length+'</b><span>실험 기록 수 (켜짐 '+nOn+')</span></div><div><b>'+quizOk+' / 4</b><span>개념 확인 맞힌 문제</span></div></div>'+
+  '<h3 style="margin-top:16px">내가 찾은 규칙</h3><p>'+(S.rule.trim()?esc(S.rule):'<span class="muted">쓴 규칙이 없어요. 규칙 찾기 단계에서 써 볼 수 있어요.</span>')+'</p></section>'+
+  '<section class="card"><h2>스스로 평가하기</h2>'+ev+'</section>'+
+  '<section class="card"><h2>내 기록 PDF로 저장하기</h2><p>지금까지 내가 쓰고 고른 내용을 PDF 한 파일로 모아요. 기록을 지우기 전에 저장해 두면 나중에 다시 볼 수 있어요.</p>'+
+  '<button class="btn pri" type="button" data-act="pdf">내 기록 PDF 저장</button><p class="pdfmsg">'+esc(ui.pdf||'')+'</p>'+
+  '<p class="muted" style="margin:8px 0 0;font-size:.9rem">PDF는 이 기기 안에서 만들어요. 이름은 들어가지 않으니, 인쇄한 뒤 손으로 이름을 써요.</p></section>'+
+  '<section class="card soft"><h3>내 기록은 어디에 있나요?</h3><p>내 기록은 이 기기의 브라우저에만 저장돼요. 이름이나 번호는 저장하지 않고, 인터넷으로 보내지도 않아요. 친구와 같은 기기를 쓴다면 수업이 끝난 뒤 기록을 지워요.</p>'+
+  '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn danger" type="button" data-act="delask">내 기록 삭제</button><button class="btn" type="button" data-act="restart">처음부터 다시 보기</button></div></section>';
+}
+
+/* ---------- 내 기록 PDF (이 기기 안에서만 만들어요) ---------- */
+var PRINT_CSS='.f-batt{fill:#EA8A2A}.f-metal{fill:#B9C4CF}.f-metal2{fill:#8D9AA8}.st{stroke:#3D4F63;stroke-width:2.5}.thread{stroke:#8D9AA8;stroke-width:2.5;fill:none}.bulb-glass{fill:#DCEBF6;stroke:#3D4F63;stroke-width:3}.bulb-glass.on{fill:#FFF1A8;stroke:#F2A900}.fil{fill:none;stroke:#3D4F63;stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round}.fil.on{stroke:#FF8A00;stroke-width:3.5}.hid{fill:none;stroke:#3D4F63;stroke-width:2;stroke-dasharray:4 4;opacity:.7}.sym{font:800 26px sans-serif;fill:#fff;text-anchor:middle}.lbl{font:700 15px sans-serif;fill:#566A80}.wire{fill:none;stroke-width:5;stroke-linecap:round;stroke-linejoin:round}';
+var PVAR={wireA:'#D43F2E',wireB:'#2B3340',surface:'#FFFFFF',ink2:'#3D4F63',muted:'#566A80',ink:'#14212E'};
+function printSVG(s){
+  s=s.replace(/var\(--([A-Za-z0-9]+)\)/g,function(m,k){return PVAR[k]||'#000000';});
+  s=s.replace('<svg ','<svg xmlns="http://www.w3.org/2000/svg" width="400" height="380" ');
+  return s.replace(/(<svg[^>]*>)/,function(m){return m+'<style>'+PRINT_CSS+'</style>';});
+}
+function svgImg(svg){return new Promise(function(res,rej){var im=new Image();im.onload=function(){res(im);};im.onerror=rej;im.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);});}
+var FF='"Pretendard","Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif';
+var PW=1240,PH=1754,MX=96,MT=110,MB=120;
+var EXPT=['어두운 곳에서 손전등을 켜 본 적이 있어요.','저녁에 스위치를 눌러 방에 전등을 켠 적이 있어요.'];
+function Doc(){this.pages=[];this.newPage();}
+Doc.prototype.newPage=function(){
+  var c=document.createElement('canvas');c.width=PW;c.height=PH;
+  var x=c.getContext('2d');x.fillStyle='#FFFFFF';x.fillRect(0,0,PW,PH);
+  this.pages.push(c);this.c=c;this.x=x;this.y=MT;
+};
+Doc.prototype.need=function(h){if(this.y+h>PH-MB)this.newPage();};
+Doc.prototype.gap=function(h){this.y+=h;};
+Doc.prototype.wrap=function(text,font,maxW){
+  var x=this.x,out=[];x.font=font;
+  String(text).split('\n').forEach(function(par){
+    var line='';
+    par.split(' ').forEach(function(w){
+      var t=line?line+' '+w:w;
+      if(x.measureText(t).width<=maxW){line=t;return;}
+      if(line){out.push(line);line='';}
+      if(x.measureText(w).width<=maxW){line=w;return;}
+      var cur='';
+      for(var i=0;i<w.length;i++){var tt=cur+w[i];if(x.measureText(tt).width>maxW){out.push(cur);cur=w[i];}else cur=tt;}
+      line=cur;
+    });
+    out.push(line);
+  });
+  return out;
+};
+Doc.prototype.text=function(text,o){
+  o=o||{};
+  var size=o.size||27,wt=o.weight||400,ind=o.indent||0,lh=Math.round(size*(o.lh||1.55)),font=wt+' '+size+'px '+FF;
+  var lines=this.wrap(text,font,PW-2*MX-ind);
+  for(var i=0;i<lines.length;i++){
+    this.need(lh);
+    var x=this.x;
+    if(o.bar){x.fillStyle=o.bar;x.fillRect(MX,this.y,6,lh);}
+    x.font=font;x.fillStyle=o.color||'#14212E';
+    x.fillText(lines[i],MX+ind,this.y+(lh+size*0.7)/2);
+    this.y+=lh;
+  }
+  if(o.after)this.y+=o.after;
+};
+Doc.prototype.label=function(t){this.gap(8);this.text(t,{size:25,weight:700,color:'#566A80',lh:1.5});};
+Doc.prototype.heading=function(t){
+  this.gap(26);this.need(120);
+  var x=this.x;x.fillStyle='#E2ECF4';x.fillRect(MX,this.y,PW-2*MX,58);
+  x.fillStyle='#1D5FA8';x.fillRect(MX,this.y,8,58);
+  x.font='800 32px '+FF;x.fillStyle='#1D5FA8';x.fillText(t,MX+24,this.y+40);
+  this.y+=58+14;
+};
+Doc.prototype.table=function(head,rows,fr){
+  var self=this,W=PW-2*MX,xs=[],cw=[],acc=0;
+  fr.forEach(function(f){xs.push(MX+acc*W);cw.push(f*W);acc+=f;});
+  function row(cells,bold,fill){
+    var font=(bold?'700 ':'400 ')+'24px '+FF,m=1,lines=[];
+    cells.forEach(function(c,i){var l=self.wrap(c,font,cw[i]-22);lines.push(l);if(l.length>m)m=l.length;});
+    var h=m*36+20;self.need(h);
+    var x=self.x,y=self.y;
+    if(fill){x.fillStyle=fill;x.fillRect(MX,y,W,h);}
+    x.strokeStyle='#C6D6E3';x.lineWidth=1.5;x.strokeRect(MX,y,W,h);
+    cells.forEach(function(c,i){
+      if(i>0){x.beginPath();x.moveTo(xs[i],y);x.lineTo(xs[i],y+h);x.stroke();}
+      x.font=font;x.fillStyle='#14212E';
+      lines[i].forEach(function(ln,j){x.fillText(ln,xs[i]+11,y+10+j*36+25);});
+    });
+    self.y+=h;
+  }
+  row(head,true,'#E2ECF4');
+  rows.forEach(function(r){row(r,false,null);});
+  this.gap(8);
+};
+Doc.prototype.cards=function(items){
+  var W=PW-2*MX,g=16,cw=Math.floor((W-3*g)/4),ih=Math.round(cw*380/400),ch=ih+150;
+  for(var r=0;r<items.length;r+=4){
+    this.need(ch);
+    for(var k=0;k<4&&r+k<items.length;k++){
+      var it=items[r+k],x=this.x,cx=MX+k*(cw+g),y=this.y;
+      x.strokeStyle='#C6D6E3';x.lineWidth=1.5;x.strokeRect(cx,y,cw,ch-10);
+      x.drawImage(it.img,cx,y+4,cw,ih);
+      x.font='700 24px '+FF;x.fillStyle='#14212E';x.fillText(it.title,cx+12,y+ih+34);
+      var ty=y+ih+64;
+      it.lines.forEach(function(l){x.font='400 22px '+FF;x.fillStyle=l[1];x.fillText(l[0],cx+12,ty);ty+=30;});
+    }
+    this.y+=ch;
+  }
+};
+function toPdf(pages){
+  return Promise.all(pages.map(function(c){return new Promise(function(res){c.toBlob(function(b){b.arrayBuffer().then(res);},'image/jpeg',0.92);});})).then(function(jpgs){
+    var enc=new TextEncoder(),parts=[],offs=[],len=0,n=pages.length;
+    function push(v){var u=typeof v==='string'?enc.encode(v):v;parts.push(u);len+=u.length;}
+    function obj(k,body){offs[k]=len;push(k+' 0 obj\n'+body+'\nendobj\n');}
+    push('%PDF-1.4\n');push(new Uint8Array([37,226,227,207,211,10]));
+    obj(1,'<< /Type /Catalog /Pages 2 0 R >>');
+    var kids=[];for(var i=0;i<n;i++)kids.push((5+3*i)+' 0 R');
+    obj(2,'<< /Type /Pages /Kids ['+kids.join(' ')+'] /Count '+n+' >>');
+    for(var j=0;j<n;j++){
+      offs[3+3*j]=len;
+      push((3+3*j)+' 0 obj\n<< /Type /XObject /Subtype /Image /Width '+PW+' /Height '+PH+' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length '+jpgs[j].byteLength+' >>\nstream\n');
+      push(new Uint8Array(jpgs[j]));push('\nendstream\nendobj\n');
+      var cs='q 595.28 0 0 841.89 0 0 cm /Im0 Do Q';
+      obj(4+3*j,'<< /Length '+cs.length+' >>\nstream\n'+cs+'\nendstream');
+      obj(5+3*j,'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /XObject << /Im0 '+(3+3*j)+' 0 R >> >> /Contents '+(4+3*j)+' 0 R >>');
+    }
+    var total=3+3*n,xo=len;
+    push('xref\n0 '+total+'\n0000000000 65535 f \n');
+    for(var k=1;k<total;k++)push(String(offs[k]).padStart(10,'0')+' 00000 n \n');
+    push('trailer\n<< /Size '+total+' /Root 1 0 R >>\nstartxref\n'+xo+'\n%%EOF\n');
+    return new Blob(parts,{type:'application/pdf'});
+  });
+}
+async function buildPdf(){
+  var D=new Doc(),n=0,M='#566A80',G='#16774A',R='#B03520';
+  function H(t){n++;D.heading(n+'. '+t);}
+  function mark(ok){return '  ['+(ok?'맞아요':'다시 생각해 볼 것')+']';}
+  function bullet(t){D.text('• '+t,{indent:10});}
+  var d=new Date();
+  D.text('과학 6-2 · 3. 전기의 이용',{size:24,weight:700,color:'#1D5FA8'});
+  D.text('전구에 불을 켜려면 어떻게 해야 할까요?',{size:46,weight:800,lh:1.35});
+  D.text('내 탐구 기록 · '+d.getFullYear()+'년 '+(d.getMonth()+1)+'월 '+d.getDate()+'일',{size:26,color:M});
+
+  if(S.exp.length||S.guess.trim()){
+    H('탐구 문제 확인');
+    if(S.exp.length){D.label('전구에 불을 켜 본 경험');S.exp.slice().sort().forEach(function(i){bullet(EXPT[i]);});}
+    if(S.guess.trim()){D.label('어떻게 했을 때 전구에 불이 켜지기도 하고 꺼지기도 할까요?');D.text(S.guess.trim(),{indent:24,bar:'#F2A900'});}
+  }
+  var pk=[1,2,3,4,5,6].filter(function(k){return S.parts[k];});
+  if(pk.length){
+    H('전기 부품 이름');
+    D.table(['번호','내가 고른 이름','확인'],pk.map(function(k){return [CIRC[k-1],S.parts[k],S.parts[k]===ANS[k]?'맞아요':'다시 생각해 볼 것'];}),[.18,.42,.40]);
+  }
+  var anyP=Object.keys(S.pred).length,anyR=Object.keys(S.rev).length;
+  if(anyP||anyR||S.predWhy.trim()){
+    H('예상하고 관찰하기 (회로 카드)');
+    if(anyP||anyR){
+      var imgs=await Promise.all(CARDS.map(function(c,i){return svgImg(circuit(c,{print:true,off:!S.rev[i+1]}));}));
+      var items=CARDS.map(function(c,i){
+        var k=i+1,p=S.pred[k],r=S.rev[k],lit=isLit(c),ls=[];
+        if(p)ls.push(['예상: '+(p==='on'?'켜짐':'안 켜짐'),'#14212E']);
+        if(r)ls.push(['관찰: '+(lit?'켜짐':'안 켜짐'),'#14212E']);
+        if(p&&r)ls.push([(p==='on')===lit?'예상과 같아요':'예상과 달랐어요',(p==='on')===lit?G:R]);
+        return {img:imgs[i],title:'회로 카드 '+CIRC[i],lines:ls};
+      });
+      D.cards(items);
+      var m=0,hit=0;CARDS.forEach(function(c,i){var k=i+1;if(S.pred[k]&&S.rev[k]){m++;if((S.pred[k]==='on')===isLit(c))hit++;}});
+      if(m)D.text('예상과 관찰 결과가 같았던 카드는 '+m+'장 중 '+hit+'장이에요.');
+    }
+    if(S.predWhy.trim()){D.label('그렇게 예상한 까닭');D.text(S.predWhy.trim(),{indent:24,bar:'#F2A900'});}
+  }
+  if(S.rec.length){
+    H('내 실험 기록');
+    var nOn=S.rec.filter(function(r){return r.lit;}).length;
+    D.text('전선 ①의 전지 쪽 끝은 (+)극에 연결하고 실험했어요. 전구에 불이 켜진 경우는 '+nOn+'번, 켜지지 않은 경우는 '+(S.rec.length-nOn)+'번이에요.',{after:8});
+    D.table(['번호','전선 ①\n전구 쪽','전선 ②\n전구 쪽','전선 ②\n전지 쪽','결과'],S.rec.map(function(r,i){return [String(i+1),PL[r.a],PL[r.b],PN[r.bp],r.lit?'켜짐':'안 켜짐'];}),[.12,.22,.22,.24,.20]);
+  }
+  if(S.r1.length||S.r2.length||S.rule.trim()){
+    H('규칙 찾기');
+    var lst=function(title,list,sel){
+      if(!sel.length)return;
+      D.label(title);
+      list.filter(function(it){return sel.indexOf(it.id)>=0;}).forEach(function(it){bullet(it.t+mark(it.ok));});
+    };
+    lst('불이 켜진 회로의 특징으로 고른 것',LST1,S.r1);
+    lst('불이 켜지지 않은 회로의 특징으로 고른 것',LST2,S.r2);
+    if(S.rule.trim()){D.label('내가 찾은 규칙');D.text(S.rule.trim(),{indent:24,bar:'#F2A900'});}
+  }
+  var bk=[['c','전지, 전구, 전선의 연결은',B_C[1]],['p','전구에서 전선을 연결하는 곳은',B_P[0]],['q','전지에서 전선을 연결하는 곳은',B_Q[0]]].filter(function(r){return S.build[r[0]];});
+  if(bk.length){
+    H('설명 문장 완성');
+    bk.forEach(function(r){bullet(r[1]+' '+S.build[r[0]]+mark(S.build[r[0]]===r[2]));});
+  }
+  var q=S.quiz,ql=[];
+  if(q.q1)ql.push('문제 1: '+q.q1+mark(q.q1==='끊기지 않게'));
+  q.q2.forEach(function(v,i){if(v)ql.push('문제 2 ('+(i+1)+'번 그림): '+(v==='o'?'○':'×')+mark(v===Q2ANS[i]));});
+  q.q3.forEach(function(v,i){if(v)ql.push('문제 3 ('+(i+1)+'번 그림): '+v+mark(v===Q3A[i]));});
+  if(q.q4[0])ql.push('문제 4 (㉠): '+q.q4[0]+mark(q.q4[0]==='전구'));
+  if(q.q4[1])ql.push('문제 4 (㉡): '+q.q4[1]+mark(q.q4[1]==='전기 회로'));
+  if(ql.length){H('개념 확인');ql.forEach(bullet);}
+  if(S.sw.why||S.sw.txt.trim()){
+    H('한 걸음 더: 스위치');
+    if(S.sw.why){D.label('스위치를 껐을 때 불이 꺼지는 까닭');bullet(S.sw.why+mark(S.sw.why==='전기 회로가 끊어져 전기가 흐르지 않기 때문이다.'));}
+    if(S.sw.txt.trim()){D.label('전기를 사용할 때 스위치가 유용한 점');D.text(S.sw.txt.trim(),{indent:24,bar:'#F2A900'});}
+  }
+  var ek=EV.filter(function(e){return S.ev[e[0]];});
+  if(ek.length){
+    H('스스로 평가');
+    ek.forEach(function(e){var lv=EL.filter(function(l){return l[0]===S.ev[e[0]];})[0][1];bullet('['+e[2]+'] '+e[1]+' → '+lv);});
+  }
+  D.pages.forEach(function(c,i){
+    var x=c.getContext('2d');x.font='400 22px '+FF;x.fillStyle=M;
+    x.fillText('전구에 불 켜기 탐구 · 내 기록',MX,PH-56);
+    var t=(i+1)+' / '+D.pages.length;x.fillText(t,PW-MX-x.measureText(t).width,PH-56);
+  });
+  return toPdf(D.pages);
+}
+var pdfBusy=false;
+function setPdfMsg(t,bad){
+  ui.pdf=t;
+  document.querySelectorAll('.pdfmsg').forEach(function(el){el.textContent=t;el.style.color=bad?'var(--bad)':'var(--ink)';});
+}
+function hasAny(){
+  var q=S.quiz;
+  return !!(S.exp.length||S.guess.trim()||Object.keys(S.parts).some(function(k){return S.parts[k];})||Object.keys(S.pred).length||Object.keys(S.rev).length||S.predWhy.trim()||S.rec.length||S.r1.length||S.r2.length||S.rule.trim()||S.build.c||S.build.p||S.build.q||q.q1||q.q2.some(Boolean)||q.q3.some(Boolean)||q.q4.some(Boolean)||S.sw.why||S.sw.txt.trim()||Object.keys(S.ev).length);
+}
+async function makePdf(){
+  if(pdfBusy)return;
+  if(!hasAny()){setPdfMsg('아직 저장할 기록이 없어요. 활동을 먼저 해 보세요.',true);return;}
+  pdfBusy=true;setPdfMsg('PDF를 만드는 중이에요…');
+  try{
+    var blob=await buildPdf();
+    var d=new Date(),p2=function(v){return v<10?'0'+v:''+v;};
+    var fn='전구_불켜기_탐구기록_'+d.getFullYear()+p2(d.getMonth()+1)+p2(d.getDate())+'.pdf';
+    var dl=null;
+    try{if(window.claude&&window.claude.use)dl=await window.claude.use('downloads');}catch(e){dl=null;}
+    if(dl){
+      await dl.save({filename:fn,data:blob});
+      setPdfMsg('PDF를 저장했어요. 내려받은 파일을 확인해 보세요.');
+    }else{
+      var url=URL.createObjectURL(blob),a=document.createElement('a');
+      a.href=url;a.download=fn;document.body.appendChild(a);a.click();a.remove();
+      setTimeout(function(){URL.revokeObjectURL(url);},4000);
+      setPdfMsg('PDF 저장을 시도했어요. 파일이 보이지 않으면 선생님께 알려 주세요.');
+    }
+  }catch(e){
+    var c=e&&e.code;
+    setPdfMsg(c==='declined'?'저장하지 않았어요. 필요하면 다시 눌러요.':c==='rate_limited'?'잠시 뒤에 다시 눌러 주세요.':'PDF를 저장하지 못했어요. 다시 눌러 보세요.',true);
+  }
+  pdfBusy=false;
+}
+
+var VIEWS=[s1,s2,s3,s4,s5,s6,s7,s8,s9,s10];
+var main=document.getElementById('main');
+
+function render(keepScroll){
+  var y=window.scrollY;
+  main.innerHTML=VIEWS[S.step]();
+  var st=STEPS[S.step];
+  document.getElementById('where').textContent=(S.step+1)+' / '+STEPS.length+' · '+st.n;
+  document.getElementById('mid').textContent=(S.step+1)+' / '+STEPS.length;
+  document.getElementById('prev').disabled=S.step===0;
+  var nx=document.getElementById('next');
+  nx.textContent=S.step===STEPS.length-1?'처음으로':'다음 ›';
+  document.getElementById('prog').innerHTML=STEPS.map(function(s,i){
+    return '<button type="button" role="tab" data-go="'+i+'" class="'+(i<S.step?'done':i===S.step?'cur':'')+'" aria-label="'+(i+1)+'단계 '+s.n+'" aria-selected="'+(i===S.step)+'"><i></i></button>';
+  }).join('');
+  if(keepScroll)window.scrollTo(0,y);else window.scrollTo(0,0);
+}
+function go(i){S.step=Math.max(0,Math.min(STEPS.length-1,i));ui.msg='';save();render(false);}
+
+document.getElementById('prev').addEventListener('click',function(){go(S.step-1);});
+document.getElementById('next').addEventListener('click',function(){go(S.step===STEPS.length-1?0:S.step+1);});
+document.getElementById('prog').addEventListener('click',function(e){var b=e.target.closest('[data-go]');if(b)go(+b.dataset.go);});
+var delbar=document.getElementById('delbar');
+function askDel(){delbar.hidden=false;}
+document.getElementById('delbtn').addEventListener('click',askDel);
+document.getElementById('delno').addEventListener('click',function(){delbar.hidden=true;});
+document.getElementById('delpdf').addEventListener('click',function(){makePdf();});
+document.getElementById('delyes').addEventListener('click',function(){wipe();ui={msg:'',hint2:false};setPdfMsg('');delbar.hidden=true;render(false);});
+
+function toggleIn(arr,v){var i=arr.indexOf(v);if(i>=0)arr.splice(i,1);else arr.push(v);}
+function simUpdate(){var el=document.getElementById('simwrap');if(el)el.innerHTML=simHTML();}
+
+main.addEventListener('click',function(e){
+  var t=e.target.closest('[data-act]');if(!t)return;
+  var a=t.dataset.act,d=t.dataset;
+  if(a==='hint2'){ui.hint2=!ui.hint2;render(true);}
+  else if(a==='pred'){S.pred[d.i]=d.v;save();render(true);}
+  else if(a==='sim'){S.sim[d.k]=d.v;ui.msg='';save();simUpdate();}
+  else if(a==='simreset'){S.sim={a:'꼭지쇠',b:'꼭지',bp:'none'};ui.msg='';save();simUpdate();}
+  else if(a==='simrec'){
+    var s=S.sim,dup=S.rec.some(function(r){return r.a===s.a&&r.b===s.b&&r.bp===s.bp;});
+    if(dup)ui.msg='같은 연결은 이미 기록했어요. 다른 연결을 해 봐요.';
+    else if(S.rec.length>=20)ui.msg='기록은 20개까지 할 수 있어요. 필요 없는 기록을 지워 봐요.';
+    else{S.rec.push({a:s.a,b:s.b,bp:s.bp,lit:isLit(simCfg())});ui.msg='';}
+    save();simUpdate();
+  }
+  else if(a==='recdel'){S.rec.splice(+d.i,1);save();simUpdate();}
+  else if(a==='rev'){S.rev[d.i]=true;save();render(true);}
+  else if(a==='revall'){for(var i=1;i<=8;i++)S.rev[i]=true;save();render(true);}
+  else if(a==='rcheck'){S[d.g+'c']=true;S[d.g+'n']=(S[d.g+'n']||0)+1;save();render(true);}
+  else if(a==='bcheck'){S.bc=true;save();render(true);}
+  else if(a==='showexp'){S.shown=!S.shown;save();render(true);}
+  else if(a==='ex7'){S.ex7=d.v;save();render(true);}
+  else if(a==='q2'){S.quiz.q2[+d.i]=d.v;S.qc.q2=false;save();render(true);}
+  else if(a==='qcheck'){S.qc[d.q]=true;save();render(true);}
+  else if(a==='swtoggle'){S.sw.closed=!S.sw.closed;S.sw.tried=true;save();render(true);}
+  else if(a==='swshow'){S.sw.show=!S.sw.show;save();render(true);}
+  else if(a==='ev'){S.ev[d.k]=d.v;save();render(true);}
+  else if(a==='pdf'){makePdf();}
+  else if(a==='delask'){askDel();window.scrollTo(0,0);}
+  else if(a==='restart'){go(0);}
+});
+main.addEventListener('change',function(e){
+  var t=e.target;
+  if(t.dataset.chk){
+    var g=t.dataset.chk;
+    if(g==='exp'){toggleIn(S.exp,+t.dataset.id);}
+    else{toggleIn(S[g],t.dataset.id);S[g+'c']=false;}
+    save();render(true);return;
+  }
+  if(t.dataset.model){
+    setPath(t.dataset.model,t.value);
+    if(t.dataset.qid)S.qc[t.dataset.qid]=false;
+    if(t.dataset.model.indexOf('build.')===0)S.bc=false;
+    save();
+    if(t.dataset.re||t.dataset.qid||t.dataset.model.indexOf('build.')===0)render(true);
+  }
+});
+main.addEventListener('input',function(e){
+  var t=e.target;
+  if(t.tagName==='TEXTAREA'&&t.dataset.model){setPath(t.dataset.model,t.value);save();}
+});
+
+render(false);
+})();
+</script>
+
+</body>
+</html>
